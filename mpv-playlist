@@ -1,0 +1,95 @@
+#!/usr/bin/python3
+
+import gi
+gi.require_version('Gtk', '3.0')
+gi.require_version('AppIndicator3', '0.1')
+from gi.repository import Gtk as gtk
+from gi.repository import AppIndicator3 as appindicator
+import urllib.request
+
+import signal
+
+'''
+Esempio di stringa per prendere i thumbnail
+https://img.youtube.com/vi/<insert-youtube-video-id-here>/0.jpg
+'''
+file_name = "lista"
+current_playlist = []
+
+def retrieve_data():
+	with open(file_name) as f:
+		content = f.readlines()
+		for i in content:
+			temp = {"id" : gimme_id(i), "url" : i, "img" : gimme_thumb(i)}
+			print(temp)
+			current_playlist.append(temp)
+			urllib.request.urlretrieve(gimme_thumb(i), "icons/" + gimme_id(i))
+	return 0
+
+class FormattedData(gtk.ListBoxRow):
+	def __init__(self, data):
+		super(gtk.ListBoxRow, self).__init__()
+		self.data = data
+		self.add(gtk.Label(data))
+		self.image = gtk.Image()
+		self.image.set_from_file("icons/" + data["id"])
+
+class PlaylistWindow(gtk.Window):
+	#Constructor of the class
+	def __init__(self):
+		gtk.Window.__init__(self, title="Mpv-playlist")
+		outer = gtk.Box(orientation=gtk.Orientation.VERTICAL, spacing=6)
+		self.add(outer)
+
+		listbox = gtk.ListBox()
+		listbox.set_selection_mode(gtk.SelectionMode.NONE)
+		outer.pack_start(listbox, True, True, 0)
+
+		for i in current_playlist:
+			listbox.add(FormattedData(i))
+
+def gimme_id(yt_url):
+	elim = "?v="
+	x = yt_url.split(elim)[1].replace("\n", "")
+	return str(x)
+
+def gimme_thumb(yt_url):
+        stringa_di_prova = "https://img.youtube.com/vi/<insert-youtube-video-id-here>/0.jpg"
+        stringa_da_eliminare = "?v="
+        x = (yt_url.split(stringa_da_eliminare))[1].replace("\n", "")
+        return str("https://img.youtube.com/vi/" + x + "/0.jpg")
+
+APPINDICATOR_ID = 'mpv-playlist'
+
+def build_menu():
+	menu = gtk.Menu()
+	quit_button = gtk.MenuItem("Quit")
+	quit_button.connect("activate", quit)
+	open_playlist_button = gtk.MenuItem("Playlist")
+	open_playlist_button.connect("activate", open_playlist)
+	separ = gtk.SeparatorMenuItem()
+	menu.append(open_playlist_button)
+	menu.append(separ)
+	menu.append(quit_button)
+	menu.show_all()
+	return menu
+
+def quit(self):
+	gtk.main_quit()
+
+def open_playlist(self):
+	win = PlaylistWindow()
+	win.connect("delete-event", quit)
+	win.show_all()
+
+def main():
+	retrieve_data()
+	indicator = appindicator.Indicator.new(APPINDICATOR_ID, gtk.STOCK_GOTO_LAST, appindicator.IndicatorCategory.SYSTEM_SERVICES)
+	indicator.set_status(appindicator.IndicatorStatus.ACTIVE)
+	indicator.set_menu(build_menu())
+	gtk.main()
+
+if __name__ == "__main__":
+	# This is added in order to make CTRL-C work
+	signal.signal(signal.SIGINT, signal.SIG_DFL)
+	main()
