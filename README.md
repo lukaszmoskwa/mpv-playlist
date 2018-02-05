@@ -45,6 +45,6 @@ As said, I'll implement an easier way to insert your preferred videos in the lis
 
 ![](https://i.imgur.com/bNBfnWM.png)
 
-#Todo
+# Todo
 + Automatic play when a video ends
 + Adding link to list from a input form in the graphical playlist
