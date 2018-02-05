@@ -5,6 +5,8 @@ gi.require_version('Gtk', '3.0')
 gi.require_version('AppIndicator3', '0.1')
 from gi.repository import Gtk as gtk
 from gi.repository import AppIndicator3 as appindicator
+from gi.repository import GdkPixbuf
+import os
 import urllib.request
 
 import signal
@@ -20,6 +22,7 @@ def retrieve_data():
 	with open(file_name) as f:
 		content = f.readlines()
 		for i in content:
+			i = i.replace("\n", "")
 			temp = {"id" : gimme_id(i), "url" : i, "img" : gimme_thumb(i)}
 			print(temp)
 			current_playlist.append(temp)
@@ -30,20 +33,35 @@ class FormattedData(gtk.ListBoxRow):
 	def __init__(self, data):
 		super(gtk.ListBoxRow, self).__init__()
 		self.data = data
-		self.add(gtk.Label(data))
+		#self.image = gtk.Image()
+		#self.image.set_from_file("icons/" + data["id"])
+		self.pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size("icons/" + data["id"],215,215)
+		#self.pixbuf.scale_simple(10, 10, GdkPixbuf.InterpType.BILINEAR)
 		self.image = gtk.Image()
-		self.image.set_from_file("icons/" + data["id"])
+		self.image.set_from_pixbuf(self.pixbuf)
+		print(self.pixbuf.get_height())
+		self.image.show()
+		self.buttone = gtk.Button()
+		self.buttone.add(self.image)
+		self.buttone.connect("clicked", self.start_mpv)
+		self.add(self.buttone)
+
+
+	def start_mpv(self, widget):
+		os.system("killall mpv")	
+		os.system("mpv " + self.data["url"] + " &")	
 
 class PlaylistWindow(gtk.Window):
 	#Constructor of the class
 	def __init__(self):
 		gtk.Window.__init__(self, title="Mpv-playlist")
-		outer = gtk.Box(orientation=gtk.Orientation.VERTICAL, spacing=6)
+		#outer = gtk.Box(orientation=gtk.Orientation.VERTICAL, spacing=6)
+		outer = gtk.ScrolledWindow()
 		self.add(outer)
 
 		listbox = gtk.ListBox()
 		listbox.set_selection_mode(gtk.SelectionMode.NONE)
-		outer.pack_start(listbox, True, True, 0)
+		outer.add_with_viewport(listbox)
 
 		for i in current_playlist:
 			listbox.add(FormattedData(i))
@@ -80,6 +98,7 @@ def quit(self):
 def open_playlist(self):
 	win = PlaylistWindow()
 	win.connect("delete-event", quit)
+	win.set_default_size(240, 600)
 	win.show_all()
 
 def main():
