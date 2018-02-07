@@ -15,9 +15,10 @@ import signal
 Esempio di stringa per prendere i thumbnail
 https://img.youtube.com/vi/<insert-youtube-video-id-here>/0.jpg
 '''
-file_name = "lista"
+base_folder = "/home/lukasz/git/mpv-playlist"
+file_name = base_folder + "/lista"
 current_playlist = []
-
+win = {}
 def retrieve_data():
 	with open(file_name) as f:
 		content = f.readlines()
@@ -26,7 +27,7 @@ def retrieve_data():
 			temp = {"id" : gimme_id(i), "url" : i, "img" : gimme_thumb(i)}
 			print(temp)
 			current_playlist.append(temp)
-			urllib.request.urlretrieve(gimme_thumb(i), "icons/" + gimme_id(i))
+			urllib.request.urlretrieve(gimme_thumb(i), base_folder + "/icons/" + gimme_id(i))
 	return 0
 
 class FormattedData(gtk.ListBoxRow):
@@ -35,7 +36,7 @@ class FormattedData(gtk.ListBoxRow):
 		self.data = data
 		#self.image = gtk.Image()
 		#self.image.set_from_file("icons/" + data["id"])
-		self.pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size("icons/" + data["id"],215,215)
+		self.pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(base_folder + "/icons/" + data["id"],215,215)
 		#self.pixbuf.scale_simple(10, 10, GdkPixbuf.InterpType.BILINEAR)
 		self.image = gtk.Image()
 		self.image.set_from_pixbuf(self.pixbuf)
@@ -48,8 +49,9 @@ class FormattedData(gtk.ListBoxRow):
 
 
 	def start_mpv(self, widget):
-		os.system("killall mpv")	
-		os.system("mpv " + self.data["url"] + " &")	
+		win.destroy()
+		os.system("killall mpv")
+		os.system("mpv " + self.data["url"] + " &")
 
 class PlaylistWindow(gtk.Window):
 	#Constructor of the class
@@ -77,7 +79,7 @@ def gimme_thumb(yt_url):
         x = (yt_url.split(stringa_da_eliminare))[1].replace("\n", "")
         return str("https://img.youtube.com/vi/" + x + "/0.jpg")
 
-APPINDICATOR_ID = 'mpv-playlist'
+APPINDICATOR_ID = 'mpv-playlist-app'
 
 def build_menu():
 	menu = gtk.Menu()
@@ -96,6 +98,7 @@ def quit(self):
 	gtk.main_quit()
 
 def open_playlist(self):
+	global win
 	win = PlaylistWindow()
 	win.connect("delete-event", quit)
 	win.set_default_size(240, 600)
